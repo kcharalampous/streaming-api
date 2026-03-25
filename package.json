@@ -13,6 +13,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
+    "test": "bun test",
     "check": "biome check ./src",
     "lint": "biome lint ./src",
     "format": "biome format ./src --write"
