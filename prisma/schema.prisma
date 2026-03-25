@@ -5,5 +5,27 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model StreamingContent {
+  id           String   @id @default(uuid())
+  title        String
+  description  String?
+  thumbnailUrl String?  @map("thumbnail_url")
+  videoUrl     String   @map("video_url")
+  genre        String?
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("streaming_content")
 }
