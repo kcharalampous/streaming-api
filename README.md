@@ -26,6 +26,12 @@ Already using Bun, so this was kind of a natural choice. A few reasons it works 
 
 The downside is that Jest has a much bigger ecosystem. If this were a larger project Jest would have been worth reconsidering, but for this project the simplicity IMO is better.
 
+### Integration tests — reusing the dev database
+
+The integration tests run against the same local Postgres instance used for development (configured via `DATABASE_URL` in `.env`). Each test cleans up after itself with `prisma.streamingContent.deleteMany()` in `afterEach`, so the table is always empty at the start of the next test.
+
+This is a shortcut for the scope of this assessment. Given more time, the right approach would be spinning up a dedicated ephemeral database per test run using [Testcontainers](https://testcontainers.com). It starts a real Postgres Docker container in `beforeAll`, runs `prisma migrate deploy` against it, and cleanups the whole thing in `afterAll`, so integration tests are fully isolated from dev data, work in CI without any pre-existing database, and don't risk clobbering anything if a test fails mid-run.
+
 ### Structure — tsoa for routing and OpenAPI generation
 
 Rather than keeping the structure minimal, I opted for a more production-oriented setup using tsoa. The main reason is that it eliminates the need to maintain a separate OpenAPI spec file — the spec is derived directly from the controller types and decorators at build time, so the docs and the implementation can't drift.
