@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
+import logger from '../lib/logger';
 
 interface HttpError extends Error {
   statusCode?: number;
@@ -12,6 +13,8 @@ export const errorHandler = (err: HttpError, req: Request, res: Response, _next:
   }
 
   const statusCode = err.statusCode ?? err.status ?? 500;
-  console.error(err.stack);
+  if (statusCode >= 500) {
+    logger.error({ err }, err.message);
+  }
   res.status(statusCode).json({ error: err.message || 'Internal server error' });
 };

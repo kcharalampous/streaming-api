@@ -6,7 +6,9 @@ import cors from 'cors';
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
+import pinoHttp from 'pino-http';
 
+import logger from './lib/logger';
 import { RegisterRoutes } from './generated/routes';
 import { errorHandler } from './middleware/errorHandler';
 import { notFound } from './middleware/notFound';
@@ -18,6 +20,17 @@ const isDev = process.env.NODE_ENV !== 'production';
 app.use(helmet({ contentSecurityPolicy: !isDev }));
 app.use(cors());
 app.use(express.json());
+app.use(
+  pinoHttp({
+    logger,
+    customSuccessMessage: (req, res) => `${req.method} ${req.url} ${res.statusCode}`,
+    customErrorMessage: (req, res) => `${req.method} ${req.url} ${res.statusCode}`,
+    serializers: {
+      req: () => undefined,
+      res: () => undefined,
+    },
+  })
+);
 
 app.post(
   '/*path',
