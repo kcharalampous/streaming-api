@@ -9,6 +9,7 @@ RUN bun install
 # Build: generate TSOA routes + Prisma client + compile TypeScript
 FROM deps AS build
 COPY . .
+ENV DATABASE_URL=postgresql://placeholder:placeholder@localhost:5432/placeholder
 RUN bun run build
 
 # Runtime image
@@ -18,6 +19,7 @@ WORKDIR /app
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/src/generated ./src/generated
 COPY --from=build /app/prisma ./prisma
+COPY --from=build /app/prisma.config.ts ./prisma.config.ts
 COPY --from=build /app/package.json ./package.json
 
 RUN bun install --production
