@@ -10,6 +10,7 @@
         "@scalar/express-api-reference": "^0.9.4",
         "bcryptjs": "^3.0.3",
         "cors": "^2.8.5",
+        "dotenv": "^16.0.0",
         "express": "^5.1.0",
         "express-rate-limit": "^7.0.0",
         "helmet": "^8.1.0",

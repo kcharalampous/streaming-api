@@ -20,7 +20,10 @@ docker compose up -d
 # 6. Run migrations
 bun run db:migrate
 
-# 7. Start the dev server
+# 7. Generate tsoa routes and prisma client
+bun run build
+
+# 8. Start the dev server
 bun run dev
 ```
 
