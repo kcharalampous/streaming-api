@@ -23,6 +23,7 @@
     "@prisma/client": "^7.5.0",
     "@scalar/express-api-reference": "^0.9.4",
     "bcryptjs": "^3.0.3",
+    "express-rate-limit": "^7.0.0",
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "helmet": "^8.1.0",

@@ -4,6 +4,7 @@ import path from 'node:path';
 import { apiReference } from '@scalar/express-api-reference';
 import cors from 'cors';
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 
 import { RegisterRoutes } from './generated/routes';
@@ -17,6 +18,17 @@ const isDev = process.env.NODE_ENV !== 'production';
 app.use(helmet({ contentSecurityPolicy: !isDev }));
 app.use(cors());
 app.use(express.json());
+
+app.post(
+  '/*path',
+  rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    limit: 20,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    message: { error: 'Too many requests, please try again later.' },
+  })
+);
 
 RegisterRoutes(app);
 
