@@ -56,12 +56,11 @@ describe('Streaming API — integration', () => {
 
       expect(res.status).toBe(200);
       expect(body.data).toHaveLength(2);
-      expect(body.total).toBe(2);
-      expect(body.page).toBe(1);
+      expect(body.nextCursor).toBeNull();
       expect(body.limit).toBe(20);
     });
 
-    test('respects page and limit query params', async () => {
+    test('returns nextCursor when more pages exist', async () => {
       await prisma.streamingContent.createMany({
         data: Array.from({ length: 5 }, (_, i) => ({
           title: `Movie ${i + 1}`,
@@ -70,16 +69,46 @@ describe('Streaming API — integration', () => {
         })),
       });
 
-      const res = await fetch(`${baseUrl}?page=2&limit=2`, {
+      const res = await fetch(`${baseUrl}?limit=2`, {
         headers: { Authorization: authHeader },
       });
       const body = await res.json();
 
       expect(res.status).toBe(200);
       expect(body.data).toHaveLength(2);
-      expect(body.page).toBe(2);
-      expect(body.limit).toBe(2);
-      expect(body.total).toBe(5);
+      expect(body.nextCursor).toBeDefined();
+      expect(typeof body.nextCursor).toBe('string');
+
+      // fetch next page using the cursor
+      const res2 = await fetch(`${baseUrl}?limit=2&cursor=${body.nextCursor}`, {
+        headers: { Authorization: authHeader },
+      });
+      const body2 = await res2.json();
+
+      expect(res2.status).toBe(200);
+      expect(body2.data).toHaveLength(2);
+      // results should not overlap
+      const ids1 = body.data.map((d: { id: string }) => d.id);
+      const ids2 = body2.data.map((d: { id: string }) => d.id);
+      expect(ids1.some((id: string) => ids2.includes(id))).toBe(false);
+    });
+
+    test('filters by genre', async () => {
+      await prisma.streamingContent.createMany({
+        data: [
+          { title: 'Action Movie', videoUrl: 'https://example.com/1.mp4', genre: 'Action' },
+          { title: 'Drama Movie', videoUrl: 'https://example.com/2.mp4', genre: 'Drama' },
+        ],
+      });
+
+      const res = await fetch(`${baseUrl}?genre=Action`, {
+        headers: { Authorization: authHeader },
+      });
+      const body = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(body.data).toHaveLength(1);
+      expect(body.data[0].genre).toBe('Action');
     });
 
     test('returns empty list when no content exists', async () => {
@@ -88,7 +117,7 @@ describe('Streaming API — integration', () => {
 
       expect(res.status).toBe(200);
       expect(body.data).toHaveLength(0);
-      expect(body.total).toBe(0);
+      expect(body.nextCursor).toBeNull();
     });
   });
 

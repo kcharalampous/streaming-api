@@ -33,7 +33,6 @@ export interface UpdateStreamingInput {
 
 export interface PaginatedStreamingResponse {
   data: StreamingContentResponse[];
-  total: number;
-  page: number;
+  nextCursor: string | null;
   limit: number;
 }

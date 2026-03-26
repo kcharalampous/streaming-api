@@ -6,17 +6,23 @@ import type {
   UpdateStreamingInput,
 } from '../types/streaming';
 
-export const list = async (page: number, limit: number): Promise<PaginatedStreamingResponse> => {
-  const [data, total] = await Promise.all([
-    prisma.streamingContent.findMany({
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy: { createdAt: 'desc' },
-    }),
-    prisma.streamingContent.count(),
-  ]);
+export const list = async (
+  cursor: string | undefined,
+  limit: number,
+  genre?: string
+): Promise<PaginatedStreamingResponse> => {
+  const items = await prisma.streamingContent.findMany({
+    take: limit + 1,
+    ...(cursor && { cursor: { id: cursor }, skip: 1 }),
+    where: genre ? { genre } : undefined,
+    orderBy: { createdAt: 'desc' },
+  });
 
-  return { data, total, page, limit };
+  const hasNextPage = items.length > limit;
+  const data = hasNextPage ? items.slice(0, limit) : items;
+  const nextCursor = hasNextPage ? data[data.length - 1].id : null;
+
+  return { data, nextCursor, limit };
 };
 
 export const findById = async (id: string): Promise<StreamingContentResponse> => {

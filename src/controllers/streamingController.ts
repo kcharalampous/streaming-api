@@ -28,14 +28,17 @@ import type { ErrorResponse } from '../types/auth';
 @Response<ErrorResponse>(401, 'Unauthorized')
 export class StreamingController extends Controller {
   /**
-   * List all streaming content. Results are paginated and ordered by creation date descending.
+   * List streaming content, ordered by creation date descending.
+   * Pass the returned `nextCursor` as the `cursor` param to fetch the next page.
+   * Optionally filter by `genre`.
    */
   @Get()
   async list(
-    @Query() page = 1,
     @Query() limit = 20,
+    @Query() cursor?: string,
+    @Query() genre?: string,
   ): Promise<PaginatedStreamingResponse> {
-    return streamingService.list(page, limit);
+    return streamingService.list(cursor, limit, genre);
   }
 
   /**

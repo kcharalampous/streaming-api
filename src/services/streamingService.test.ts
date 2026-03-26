@@ -30,7 +30,6 @@ const mockContent = {
 describe('streamingService', () => {
   beforeEach(() => {
     prisma.streamingContent.findMany.mockReset();
-    prisma.streamingContent.count.mockReset();
     prisma.streamingContent.findUnique.mockReset();
     prisma.streamingContent.create.mockReset();
     prisma.streamingContent.update.mockReset();
@@ -38,38 +37,55 @@ describe('streamingService', () => {
   });
 
   describe('list', () => {
-    test('returns paginated results', async () => {
+    test('returns data and null nextCursor when results fit within limit', async () => {
       prisma.streamingContent.findMany.mockResolvedValue([mockContent]);
-      prisma.streamingContent.count.mockResolvedValue(1);
 
-      const result = await streamingService.list(1, 20);
+      const result = await streamingService.list(undefined, 20);
 
       expect(result.data).toHaveLength(1);
       expect(result.data[0].id).toBe('content-1');
-      expect(result.total).toBe(1);
-      expect(result.page).toBe(1);
+      expect(result.nextCursor).toBeNull();
       expect(result.limit).toBe(20);
     });
 
-    test('calculates correct skip for page 3', async () => {
-      prisma.streamingContent.findMany.mockResolvedValue([]);
-      prisma.streamingContent.count.mockResolvedValue(50);
+    test('returns nextCursor when there is another page', async () => {
+      const items = Array.from({ length: 3 }, (_, i) => ({ ...mockContent, id: `content-${i + 1}` }));
+      // service fetches limit+1 items; returning 3 when limit=2 signals a next page
+      prisma.streamingContent.findMany.mockResolvedValue(items);
 
-      await streamingService.list(3, 10);
+      const result = await streamingService.list(undefined, 2);
+
+      expect(result.data).toHaveLength(2);
+      expect(result.nextCursor).toBe('content-2');
+    });
+
+    test('passes cursor and skip to prisma when cursor is provided', async () => {
+      prisma.streamingContent.findMany.mockResolvedValue([]);
+
+      await streamingService.list('content-5', 10);
 
       expect(prisma.streamingContent.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ skip: 20, take: 10 }),
+        expect.objectContaining({ cursor: { id: 'content-5' }, skip: 1 }),
+      );
+    });
+
+    test('filters by genre when provided', async () => {
+      prisma.streamingContent.findMany.mockResolvedValue([mockContent]);
+
+      await streamingService.list(undefined, 20, 'Action');
+
+      expect(prisma.streamingContent.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { genre: 'Action' } }),
       );
     });
 
     test('returns empty data when no content exists', async () => {
       prisma.streamingContent.findMany.mockResolvedValue([]);
-      prisma.streamingContent.count.mockResolvedValue(0);
 
-      const result = await streamingService.list(1, 20);
+      const result = await streamingService.list(undefined, 20);
 
       expect(result.data).toHaveLength(0);
-      expect(result.total).toBe(0);
+      expect(result.nextCursor).toBeNull();
     });
   });
 

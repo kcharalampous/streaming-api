@@ -40,22 +40,22 @@ describe('StreamingController', () => {
   });
 
   describe('list', () => {
-    test('delegates to service with correct page and limit', async () => {
-      const paginated = { data: [mockContent], total: 1, page: 2, limit: 10 };
+    test('delegates to service with limit, cursor and genre', async () => {
+      const paginated = { data: [mockContent], nextCursor: 'content-1', limit: 10 };
       listSpy.mockResolvedValue(paginated);
 
-      const result = await controller.list(2, 10);
+      const result = await controller.list(10, 'some-cursor', 'Action');
 
-      expect(listSpy).toHaveBeenCalledWith(2, 10);
+      expect(listSpy).toHaveBeenCalledWith('some-cursor', 10, 'Action');
       expect(result).toEqual(paginated);
     });
 
-    test('uses default page=1 and limit=20', async () => {
-      listSpy.mockResolvedValue({ data: [], total: 0, page: 1, limit: 20 });
+    test('uses default limit=20 and passes undefined cursor and genre', async () => {
+      listSpy.mockResolvedValue({ data: [], nextCursor: null, limit: 20 });
 
       await controller.list();
 
-      expect(listSpy).toHaveBeenCalledWith(1, 20);
+      expect(listSpy).toHaveBeenCalledWith(undefined, 20, undefined);
     });
   });
 

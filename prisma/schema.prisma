@@ -27,5 +27,7 @@ model StreamingContent {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
+  @@index([createdAt(sort: Desc)])
+  @@index([genre, createdAt(sort: Desc)])
   @@map("streaming_content")
 }

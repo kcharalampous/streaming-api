@@ -90,3 +90,25 @@ Calling `next()` causes Express to continue executing the handler chain, even af
 // After
 return reject(Object.assign(new Error('Invalid token'), { statusCode: 401 })); // exit the middleware immediately
 ```
+
+### Streaming list route — performance issues
+
+The original route fetches every row in the table on every request, regardless of how many results the client needs:
+
+```js
+router.get('/', authMiddleware, async (req, res) => {
+  const allContent = await StreamingContent.findAll();
+  const filtered = allContent.filter(item => item.genre === req.query.genre);
+  res.json(filtered);
+});
+```
+
+`findAll()` with no conditions loads the entire table into memory, transfers it all over the network, deserialises it into JS objects, and then throws most of it away in the `.filter()` call. Response time and memory usage grow linearly with the table size.
+
+Three improvements were added to address this:
+
+1. **Cursor-based pagination** — `take: limit + 1` in Prisma means each query fetches at most `limit + 1` rows. The table can grow arbitrarily and query time stays constant. In the original implementation I opted for offset pagination, but as this does not scale well, I switched to cursor-based. The tradeoff is now it's not possible to jump to specific pages but an infinite-scroll type of UI should suffice in the FE side, as it became the modern standard for content type of applications anyway.
+
+2. **DB-level genre filtering** — `where: genre ? { genre } : undefined` pushes the filter into SQL so only matching rows are ever read from disk, transferred, or deserialised, instead of filtering in JS after fetching everything.
+
+3. **Composite indexes** — moving the filter to SQL still requires a full sequential scan without an index. Two indexes were added to cover both query shapes: `(createdAt DESC)` for unfiltered requests, and `(genre, createdAt DESC)` for genre-filtered ones. This lets Postgres satisfy both the filter and the sort order from the index alone, with no separate sort step.
